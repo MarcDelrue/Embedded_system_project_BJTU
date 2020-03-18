@@ -11,10 +11,17 @@ faceCascade = cv2.CascadeClassifier(cascadePath)
 engine = pyttsx3.init()
 engine.setProperty('rate', 130)
 font = cv2.FONT_HERSHEY_SIMPLEX
+USER_DATA = []
 WAIT_SECONDS = 120
 id = 0
 count_face_appear = 0
 path = 'dataset/Users/'
+
+class users:  
+    def __init__(self, id, name, on_camera):
+        self.id = id
+        self.name = name  
+        self.on_camera = on_camera 
 
 def getNames():
     names_array = []
@@ -29,37 +36,34 @@ cam.set(4, 480)
 minW = 0.1*cam.get(3)
 minH = 0.1*cam.get(4)
 
-reapeared = 0
-
-def user_gone():
+def user_gone(id):
     global count_face_appear
-    global reapeared
-    if reapeared == 0:
+
+    if USER_DATA[id - 1].on_camera == 0:
         print ("restart")
         count_face_appear = 0
         
     else:
         print ("still on camera")
-        Timer(WAIT_SECONDS, user_gone).start()
-        reapeared = 0
+        Timer(WAIT_SECONDS, user_gone, [id]).start()
+        USER_DATA[id - 1].on_camera = 0
 
-def register_new_comer(id):
+def register_new_comer(id, name):
     global count_face_appear
-    global reapeared
 
     if count_face_appear <= 10:
         count_face_appear += 1
     if count_face_appear == 10:
-        engine.say("Oh hello there " + id)
+        engine.say("Oh hello there " + name)
+        USER_DATA.append(users(id, name, 0))
         engine.runAndWait()
         engine.stop()
         try:
-            Timer(WAIT_SECONDS, user_gone).start()
-            print ("See you in 5 second")
+            Timer(WAIT_SECONDS, user_gone, [id]).start()
         except:
             pass
-    if count_face_appear == 11:
-        reapeared = 1
+    if count_face_appear == 11 and USER_DATA[id - 1].on_camera != 1:
+        USER_DATA[id - 1].on_camera = 1
 
 
 
@@ -78,15 +82,15 @@ def life_cycle():
             cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
             id, confidence = recognizer.predict(gray[y:y+h,x:x+w])
             if (confidence < 100):
-                id = names[id - 1]
+                name = names[id - 1]
                 if (100 - confidence > 35):
-                    register_new_comer(id)
+                    register_new_comer(id, name)
                 confidence = "  {0}%".format(round(100 - confidence))
             else:
-                id = "unknown"
+                name = "unknown"
                 confidence = "  {0}%".format(round(100 - confidence))
             
-            cv2.putText(img, str(id), (x+5,y-5), font, 1, (255,255,255), 2)
+            cv2.putText(img, str(name), (x+5,y-5), font, 1, (255,255,255), 2)
             cv2.putText(img, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1)  
         
         cv2.imshow('camera',img) 

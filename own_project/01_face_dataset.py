@@ -7,9 +7,9 @@ import shutil
 # FEATURES :
 # choose id + Name
 # propose add picture if id known
+# iterate on users for training
 
 # TODO:
-# iterate on users for training
 
 def check_id_taken():
     for filename in os.listdir(path):

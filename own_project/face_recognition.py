@@ -3,6 +3,7 @@ import numpy as np
 from threading import Timer, Thread
 import os 
 import pyttsx3
+import speech_recognition as sr
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.read('trainer/trainer.yml')

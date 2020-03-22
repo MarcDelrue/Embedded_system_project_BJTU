@@ -31,7 +31,7 @@ for places in place_data:
     for data in allStats:
         order_data.append(data.get_text().replace("  ","").replace("\n",""))
     ORDER_DATA.append(collected_data(order_data))
-    print (find_in_data("France"))
+print (find_in_data("France").name)
 
 
  

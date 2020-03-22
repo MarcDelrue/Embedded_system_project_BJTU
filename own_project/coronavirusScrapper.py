@@ -10,11 +10,11 @@ class collected_data:
         # print (data)
         self.name = data[0]
         self.confirmed = data[1]
-        self.confirmed_changes_today = data[2]
-        self.deceased = data[3]
-        self.deceased_changes_today = data[4]
-        self.recovered = data[5]
-        self.serious = data[6]
+        self.confirmed_changes_today = data[3]
+        self.deceased = data[4]
+        self.deceased_changes_today = data[5]
+        self.recovered = data[7]
+        self.serious = data[8]
 
 def find_in_data(place):
     for x in ORDER_DATA:
@@ -31,7 +31,7 @@ for places in place_data:
     for data in allStats:
         order_data.append(data.get_text().replace("  ","").replace("\n",""))
     ORDER_DATA.append(collected_data(order_data))
-    print (find_in_data())
+    print (find_in_data("France"))
 
 
  

@@ -12,3 +12,6 @@ sudo apt install flac
 pip install SpeechRecognition
 # webscrapping
 pip install beautifulsoup4pip install requests
+# Serverside
+pip install --upgrade firebase-admin
+

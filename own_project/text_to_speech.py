@@ -5,6 +5,7 @@ r = sr.Recognizer()
 engine = pyttsx3.init()
 engine.setProperty('rate', 130)
 
-engine.say("36.7%")
-engine.runAndWait()
-engine.stop()
+def say_out_loud(text):
+    engine.say(text)
+    engine.runAndWait()
+    engine.stop()

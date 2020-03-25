@@ -112,8 +112,8 @@ def user_demand(speech):
         say_out_loud("What numbers do you want to know on coronavirus, say help if you need examples")
         user_demand(voice_recognition())
 
-with sr.Microphone() as source:
-    audio = r.listen(source)
+# with sr.Microphone() as source:
+#     audio = r.listen(source)
 
 def voice_recognition():
     with sr.Microphone() as source:

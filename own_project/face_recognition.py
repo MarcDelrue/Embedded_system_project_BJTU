@@ -2,20 +2,19 @@ import cv2
 import numpy as np
 from threading import Timer, Thread
 import os 
-import pyttsx3
 import speech_recognition as sr
 import requests
 from bs4 import BeautifulSoup
 import speech_recognition as sr
+from text_to_speech import say_out_loud
 
-recognizer = cv2.face.LBPHFaceRecognizer_create()
-recognizer.read('trainer/trainer.yml')
+name = None
+cam = None
+minW = None
+minH = None
+recognizer = None
 cascadePath = "/home/pi/opencv/data/haarcascades/haarcascade_frontalface_default.xml"
 faceCascade = cv2.CascadeClassifier(cascadePath)
-engine = pyttsx3.init()
-engine.setProperty('rate', 130)
-# voices = engine.getProperty('voices') 
-# engine.setProperty('voice', voices[1].id)
 font = cv2.FONT_HERSHEY_SIMPLEX
 r = sr.Recognizer()
 USER_DATA = []
@@ -132,22 +131,11 @@ def voice_recognition():
         say_out_loud("Could you please check if you're connected to internet ?")
         return (voice_recognition())
 
-def getNames():
+def getNames(user_list):
     names_array = []
-    for f in os.listdir(path):
-        names_array.insert(int(f.split(".")[0]) - 1, f.split(".")[1])
+    for f in user_list:
+        names_array.insert(int(f.id) - 1, f.name)
     return names_array
-
-names = getNames()
-cam = cv2.VideoCapture(0)
-cam.set(3, 640)
-cam.set(4, 480)
-minW = 0.1*cam.get(3)
-minH = 0.1*cam.get(4)
-
-def say_out_loud(text):
-    engine.say(text)
-    engine.runAndWait()
 
 def user_gone(id):
     global count_face_appear
@@ -221,8 +209,22 @@ def life_cycle():
         if k == 27:
             break
 
-life_cycle()
-engine.stop()
-print("\n [INFO] Exiting Program and cleanup stuff")
-cam.release()
-cv2.destroyAllWindows()
+def face_recognition_starter(user_list):
+    global names
+    global cam
+    global minH
+    global minW
+    global recognizer
+
+    names = getNames(user_list)
+    cam = cv2.VideoCapture(0)
+    cam.set(3, 640)
+    cam.set(4, 480)
+    minW = 0.1*cam.get(3)
+    minH = 0.1*cam.get(4)
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.read('tmp/trainer.yml')
+    life_cycle()
+    print("\n [INFO] Exiting Program and cleanup stuff")
+    cam.release()
+    cv2.destroyAllWindows()

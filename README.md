@@ -14,4 +14,3 @@ pip install SpeechRecognition
 pip install beautifulsoup4pip install requests
 # Serverside
 pip install --upgrade firebase-admin
-

@@ -23,15 +23,16 @@ def find_in_data(place):
     return (None)
 
 
-places_list = soup.find("tbody")
+places_list = soup.find(id="container_global")
 place_data = places_list.find_all("tr")
 for places in place_data:
     allStats = places.find_all("td")
     order_data = []
     for data in allStats:
-        order_data.append(data.get_text().replace("  ","").replace("\n",""))
-    ORDER_DATA.append(collected_data(order_data))
-print (find_in_data("France").name)
+        order_data.append(data.get_text().replace("  ","").replace("\n","").replace("★", ""))
+    if (len(order_data) > 0):
+        ORDER_DATA.append(collected_data(order_data))
+print (find_in_data("France").confirmed)
 
 
  

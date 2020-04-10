@@ -1,8 +1,9 @@
-import firebase_admin
 import datetime
 import os
+import firebase_admin
 from firebase_admin import credentials, firestore, storage
 from face_dataset import remove_tmp_pictures
+import firebase_app_initializer
 
 def download_user_picture(path, bucket):
     blob_iter = bucket.list_blobs(delimiter='/', prefix="user_picture/")
@@ -31,7 +32,6 @@ def download_trained_data(bucket):
         pass
     with open(path, "wb") as file_obj:
         blob.download_to_file(file_obj)
-
 
 def upload_trained_data(path, bucket):
         imageBlob = bucket.blob(path)

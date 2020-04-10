@@ -5,8 +5,10 @@ import os
 import speech_recognition as sr
 import requests
 from bs4 import BeautifulSoup
-import speech_recognition as sr
 from text_to_speech import say_out_loud
+from firestore_functions import update_user_history
+from datetime import datetime
+import firebase_app_initializer
 
 name = None
 cam = None
@@ -25,6 +27,7 @@ path = 'dataset/Users/'
 page = requests.get('https://ncov2019.live/data')
 soup = BeautifulSoup(page.text, 'html.parser')
 ORDER_DATA = []
+lifecycle_switch = True
 
 class users:  
     def __init__(self, id, name, on_camera):
@@ -36,7 +39,7 @@ class VOCAB():
     def __init__(self):
         self.death_vocab = ["dead", "die", "death", "decease", "passed on", "passed away", "perish"]
         self.recovered_vocab = ["recover", "cure", "heal", "rehabilitate"]
-        self.confirmed_vocab = ["confirm", "have coronavirus", "coronavirus cases", "infect", "contaminate"]
+        self.confirmed_vocab = ["confirm", "have the coronavirus" , "have coronavirus", "coronavirus cases", "infect", "contaminate"]
         self.today_vocab = ["today", "recently", "lately", "just now", "not long ago"]
         self.serious_vocab = ["serious", "danger"]
 
@@ -50,6 +53,13 @@ class collected_data:
         self.recovered = data[7]
         self.serious = data[8]
 
+class request_summary:
+     def __init__(self,data_type, number, place):
+        self.data_type = data_type
+        self.number = number
+        self.place = place
+        self.time = datetime.now()
+
 def find_in_data(place):
     for x in ORDER_DATA:
         if x.name.lower() == place:
@@ -57,14 +67,17 @@ def find_in_data(place):
     return (None)
 
 def coronavirus_scrapper():
-    places_list = soup.find("tbody")
+    global ORDER_DATA
+
+    places_list = soup.find(id="container_global")
     place_data = places_list.find_all("tr")
     for places in place_data:
         allStats = places.find_all("td")
         order_data = []
         for data in allStats:
-            order_data.append(data.get_text().replace("  ","").replace("\n",""))
-        ORDER_DATA.append(collected_data(order_data))
+            order_data.append(data.get_text().replace("  ","").replace("\n","").replace("★", ""))
+        if (len(order_data) > 0):
+            ORDER_DATA.append(collected_data(order_data))
 
 
 def find_vocab_in_speech(speech, vocab):
@@ -73,13 +86,25 @@ def find_vocab_in_speech(speech, vocab):
             return True
     return False
 
-def command_help():
+def command_help(id):
     say_out_loud("try to say: How many people got infected today in France or how many people died in Italy")
-    user_demand(voice_recognition())
+    user_demand(id, voice_recognition())
 
-def user_demand(speech):
+def raspberry_on_off(doc_snapshot, changes, read_time):
+    global lifecycle_switch
+    
+    for doc in doc_snapshot:
+        if (doc.to_dict()["is_launched"] == False):
+            lifecycle_switch = False
+            
+def send_end_python_loop():
+    python_function_ref = firebase_app_initializer.db.collection(u'python_function')
+    doc_ref_is_working = python_function_ref.document(u'g9y4AYxRUFBkTnUDvxW2')
+    doc_watch_is_working = doc_ref_is_working.on_snapshot(raspberry_on_off)
+
+def user_demand(id, speech):
     if (speech.find("help") != -1):
-        command_help()
+        command_help(id)
     speech = speech.replace("corona virus", "coronavirus")
     vocab = VOCAB()
     print (speech)
@@ -91,28 +116,31 @@ def user_demand(speech):
     if (find_vocab_in_speech(speech, vocab.death_vocab)):
         if find_vocab_in_speech(speech, vocab.today_vocab):
             say_out_loud("Just today " +  data_of_place.deceased_changes_today + " people died in " + place)
+            update_user_history(id + 1, request_summary("Death this day" , int(data_of_place.deceased_changes_today), place))
         else:
             say_out_loud(data_of_place.deceased + " people died in " + place)
+            update_user_history(id + 1, request_summary("Death" , data_of_place.deceased, place))
     elif (find_vocab_in_speech(speech, vocab.confirmed_vocab)):
         if find_vocab_in_speech(speech, vocab.today_vocab):
             say_out_loud("Just today " + data_of_place.confirmed_changes_today + " people have been infected by coronavirus in " + place)
+            update_user_history(id + 1, request_summary("Confirmed this day" , data_of_place.confirmed_changes_today, place))
         else:
             say_out_loud(data_of_place.confirmed + " people have been infected by coronavirus in " + place)
+            update_user_history(id + 1, request_summary("Confirmed" , data_of_place.confirmed, place))
     elif (find_vocab_in_speech(speech, vocab.recovered_vocab)):
         say_out_loud(data_of_place.recovered + " people have recovered from coronavirus in " + place)
+        update_user_history(id + 1, request_summary("Recovered" , data_of_place.recovered, place))
     elif (find_vocab_in_speech(speech, vocab.serious_vocab)):
         say_out_loud(data_of_place.serious + " people are in a serious case because of coronavirus in " + place)
+        update_user_history(id + 1, request_summary("Serious cases" , data_of_place.serious, place))
     else:
         say_out_loud("I didn't understand. For some examples of use. say help")
-        user_demand(voice_recognition())
+        user_demand(id, voice_recognition())
     say_out_loud("Do you want other numbers related to coronavirus ?")
     answer = voice_recognition()
     if answer.find("yes") != -1:
         say_out_loud("What numbers do you want to know on coronavirus, say help if you need examples")
-        user_demand(voice_recognition())
-
-# with sr.Microphone() as source:
-#     audio = r.listen(source)
+        user_demand(id, voice_recognition())
 
 def voice_recognition():
     with sr.Microphone() as source:
@@ -163,7 +191,7 @@ def register_new_comer(id, name):
             coronavirus_scrapper()
             say_out_loud("Ok, done !")
             say_out_loud("What numbers do you want to know on coronavirus, say help if you need examples")
-            user_demand(voice_recognition())
+            user_demand(id, voice_recognition())
             say_out_loud("Ok then, see you next time " + name)
             USER_DATA[id - 1].on_camera = 0
         else:
@@ -176,10 +204,9 @@ def register_new_comer(id, name):
     if count_face_appear == 11 and USER_DATA[id - 1].on_camera != 1:
         USER_DATA[id - 1].on_camera = 1
 
-
-
-def life_cycle(): 
-    while True:
+def life_cycle():
+    global lifecycle_switch
+    while lifecycle_switch == True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         
@@ -193,7 +220,7 @@ def life_cycle():
             cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
             id, confidence = recognizer.predict(gray[y:y+h,x:x+w])
             if (confidence < 100):
-                name = names[id - 1]
+                name = names[id - 2]
                 if (100 - confidence > 35):
                     register_new_comer(id, name)
                 confidence = "  {0}%".format(round(100 - confidence))
@@ -215,8 +242,12 @@ def face_recognition_starter(user_list):
     global minH
     global minW
     global recognizer
+    global lifecycle_switch
 
+    lifecycle_switch = True
+    send_end_python_loop()
     names = getNames(user_list)
+    print (names)
     cam = cv2.VideoCapture(0)
     cam.set(3, 640)
     cam.set(4, 480)
